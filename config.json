@@ -1,0 +1,40 @@
+{
+  "data": "data",
+  "result_directory": "result",
+  "gpu": 3,
+  "resume_snapshot": "",
+  "training": {
+    "epochs": 500,
+    "batch_size": 16,
+    "shuffle": true,
+    "num_workers": 4
+  },
+  "encoder": {
+    "input_size" : 1,
+    "hidden_size": 128,
+    "bidirectional": false,
+    "n_layers": 1
+  },
+  "encoder_optimizer": {
+    "learning_rate": 0.01
+  },
+  "decoder": {
+    "input_size" : 1,
+    "hidden_size": 128,
+    "output_size" : 1,
+    "length": 3000,
+    "dropout": 0.2,
+    "bidirectional": false,
+    "n_layers": 1,
+    "teacher_forcing_ratio": 0.5
+  },
+  "decoder_optimizer": {
+    "learning_rate": 0.01
+  },
+  "every": {
+    "save": 200,
+    "plot": 100,
+    "validate": 500,
+    "log": 500
+  }
+}
