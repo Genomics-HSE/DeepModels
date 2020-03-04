@@ -10,9 +10,9 @@ import torch.optim as O
 import torch.nn as nn
 from torch.utils import data
 
-from model import EncoderRNN, AttnDecoderRNN
+from seq2seq_lstm import Encoder, Decoder
 from util import get_config, makedirs, get_filenames
-from train import train, validate
+from train import train, validate, train_lstm, validate_lstm
 from dataset import Dataset
 
 
@@ -27,7 +27,7 @@ if __name__ == '__main__':
         device = torch.device('cpu')
     
     number_of_examples = len(get_filenames(os.path.join(config["data"], "x")))
-    list_ids = [str(i) for i in range(1, number_of_examples + 1)]
+    list_ids = [str(i) for i in range(number_of_examples)]
     random.shuffle(list_ids)
     t_ind, v_ind = round(number_of_examples * 0.7), round(number_of_examples * 0.9)
     train_indices, validation_indices, test_indices = list_ids[:t_ind], list_ids[t_ind:v_ind], list_ids[v_ind:]
@@ -53,12 +53,12 @@ if __name__ == '__main__':
     if config["resume_snapshot"]:
         model = torch.load(config["resume_snapshot"], map_location=device)
     else:
-        encoder = EncoderRNN(config["encoder"]).to(device)
-        decoder = AttnDecoderRNN(config["decoder"]).to(device)
+        encoder = Encoder(config["encoder"]).to(device)
+        decoder = Decoder(config["decoder"]).to(device)
     
     criterion = nn.MSELoss()
-    encoder_opt = O.SGD(encoder.parameters(), lr=config["encoder_optimizer"]["learning_rate"])
-    decoder_opt = O.SGD(decoder.parameters(), lr=config["decoder_optimizer"]["learning_rate"])
+    encoder_opt = O.Adam(encoder.parameters(), lr=config["encoder_optimizer"]["learning_rate"])
+    decoder_opt = O.Adam(decoder.parameters(), lr=config["decoder_optimizer"]["learning_rate"])
     
     iterations = 0
     start = time.time()
@@ -73,7 +73,8 @@ if __name__ == '__main__':
         for epoch in range(config["training"]["epochs"]):
             for batch_idx, (X_batch, y_batch) in enumerate(training_generator):
                 X_batch, y_batch = X_batch.to(device), y_batch.to(device)
-                train_loss = train(X_batch, y_batch, encoder,
+                X_batch, y_batch = X_batch.permute(1, 0, 2), y_batch.permute(1, 0, 2)
+                train_loss = train_lstm(X_batch, y_batch, encoder,
                                    decoder, encoder_opt, decoder_opt, criterion)
                 experiment.log_metric("train_loss", train_loss, step=iterations)
                 # checkpoint model periodically
@@ -97,7 +98,8 @@ if __name__ == '__main__':
                         valid_loss = 0
                         for X_batch_v, y_batch_v in validation_generator:
                             X_batch_v, y_batch_v = X_batch_v.to(device), y_batch_v.to(device)
-                            valid_loss += validate(X_batch_v, y_batch_v, encoder, decoder, criterion)
+                            X_batch_v, y_batch_v = X_batch_v.permute(1, 0, 2), y_batch_v.permute(1, 0, 2)
+                            valid_loss += validate_lstm(X_batch_v, y_batch_v, encoder, decoder, criterion)
 
                         experiment.log_metric("valid_loss", valid_loss, step=iterations)
                         print(dev_log_template.format(time.time()-start,
@@ -135,5 +137,6 @@ if __name__ == '__main__':
         test_loss = 0
         for X_batch_t, y_batch_t in test_generator:
             X_batch_t, y_batch_t = X_batch_t.to(device), y_batch_t.to(device)
-            test_loss += validate(X_batch_t, y_batch_t, encoder, decoder, criterion)
+            X_batch_t, y_batch_t = X_batch_t.permute(1, 0, 2), y_batch_t.permute(1, 0, 2)
+            test_loss += validate_lstm(X_batch_t, y_batch_t, encoder, decoder, criterion)
         experiment.log_metric("test loss", test_loss)
