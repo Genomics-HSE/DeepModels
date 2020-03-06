@@ -60,19 +60,19 @@ class AttnDecoderGRU(nn.Module):
         output = self.out(output)
         # print("output", output.shape)
         return output, hidden, attn_weights
-    
 
-class Seq2SeqAttentionGRU(nn.Module):
-    def __init__(self, encoder, decoder, device):
+
+class Model(nn.Module):
+    def __init__(self, config, device):
         super().__init__()
         
-        self.encoder = encoder
-        self.decoder = decoder
+        self.encoder = EncoderGRU(config["encoder"]).to(device)
+        self.decoder = AttnDecoderGRU(config["decoder"]).to(device)
         self.device = device
         
-        assert encoder.hid_dim == decoder.hid_dim, \
+        assert self.encoder.hid_dim == self.decoder.hid_dim, \
             "Hidden dimensions of encoder and decoder must be equal!"
-        assert encoder.n_layers == decoder.n_layers, \
+        assert self.encoder.n_layers == self.decoder.n_layers, \
             "Encoder and decoder must have equal number of layers!"
 
     def forward(self, input_tensor, target_tensor, teacher_forcing_ratio=0.5):
@@ -84,13 +84,13 @@ class Seq2SeqAttentionGRU(nn.Module):
     
         encoder_outputs, encoder_hidden = self.encoder(input_tensor)
     
-        decoder_input = target_tensor[0].unsqueeze(0)
+        decoder_output = torch.zeros(1, batch_size, 1)
         decoder_hidden = encoder_hidden
     
-        for t in range(1, trg_len):
-            decoder_output, decoder_hidden = self.decoder(decoder_input, decoder_hidden, encoder_outputs)
-            outputs[t] = decoder_output
+        for t in range(trg_len):
             teacher_force = random.random() < teacher_forcing_ratio
             decoder_input = target_tensor[t].unsqueeze(0) if teacher_force else decoder_output
+            decoder_output, decoder_hidden = self.decoder(decoder_input, decoder_hidden, encoder_outputs)
+            outputs[t] = decoder_output
     
         return outputs

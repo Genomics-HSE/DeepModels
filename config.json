@@ -1,40 +1,40 @@
 {
-  "data": "data",
-  "result_directory": "result",
-  "gpu": 3,
+  "data": "/home/karzymatov/genomic_data/s_data/",
+  "result_directory": "gru_result",
   "resume_snapshot": "",
+  "model": "GRU.model",
   "training": {
-    "epochs": 500,
-    "batch_size": 8,
+    "epochs": 1000,
+    "batch_size": 32,
     "shuffle": true,
-    "num_workers": 4
+    "num_workers": 16
   },
   "encoder": {
     "input_size" : 1,
-    "hidden_size": 1024,
+    "hidden_size": 2048,
     "bidirectional": false,
-    "n_layers": 1
+    "num_layers": 4,
+    "dropout": 0.1
   },
-  "encoder_optimizer": {
-    "learning_rate": 0.0001
+  "optimizer": {
+    "learning_rate": 0.001
   },
+  "clip": 1,
   "decoder": {
     "input_size" : 1,
-    "hidden_size": 1024,
+    "hidden_size": 2048,
     "output_size" : 1,
     "length": 3000,
-    "dropout": 0.2,
+    "dropout": 0.1,
     "bidirectional": false,
-    "n_layers": 1,
+    "num_layers": 4,
     "teacher_forcing_ratio": 0.5
-  },
-  "decoder_optimizer": {
-    "learning_rate": 0.0001
   },
   "every": {
     "save": 200,
     "plot": 100,
     "validate": 500,
     "log": 500
-  }
+  },
+  "gpu": 3
 }

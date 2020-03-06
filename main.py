@@ -2,6 +2,7 @@ import os
 import time
 import glob
 import random
+import importlib
 
 from comet_ml import Experiment
 
@@ -10,9 +11,8 @@ import torch.optim as O
 import torch.nn as nn
 from torch.utils import data
 
-from seq2seq_lstm import Encoder, Decoder
 from util import get_config, makedirs, get_filenames
-from train import train, validate, train_lstm, validate_lstm
+from train import train, validate
 from dataset import Dataset
 
 
@@ -22,10 +22,10 @@ if __name__ == '__main__':
     experiment.log_parameters(config)
     if torch.cuda.is_available():
         torch.cuda.set_device(config["gpu"])
-        device = torch.device('cuda:{}'.format(config["gpu"]))
+        device = torch.device('cuda:{}'.format(os.environ["CUDA_VISIBLE_DEVICES"]))
     else:
         device = torch.device('cpu')
-    
+    print(device)
     number_of_examples = len(get_filenames(os.path.join(config["data"], "x")))
     list_ids = [str(i) for i in range(number_of_examples)]
     random.shuffle(list_ids)
@@ -46,19 +46,13 @@ if __name__ == '__main__':
     test_set = Dataset(config["data"], test_indices)
     test_generator = data.DataLoader(test_set, **params)
     
-    # double the number of cells for bidirectional networks
-    # if config.birnn:
-    #     config.n_cells *= 2
-    
     if config["resume_snapshot"]:
         model = torch.load(config["resume_snapshot"], map_location=device)
     else:
-        encoder = Encoder(config["encoder"]).to(device)
-        decoder = Decoder(config["decoder"]).to(device)
+        model = importlib.import_module(config["model"]).Model(config, device)
     
     criterion = nn.MSELoss()
-    encoder_opt = O.Adam(encoder.parameters(), lr=config["encoder_optimizer"]["learning_rate"])
-    decoder_opt = O.Adam(decoder.parameters(), lr=config["decoder_optimizer"]["learning_rate"])
+    opt = O.Adam(model.parameters(), lr=config["optimizer"]["learning_rate"])
     
     iterations = 0
     start = time.time()
@@ -74,18 +68,15 @@ if __name__ == '__main__':
             for batch_idx, (X_batch, y_batch) in enumerate(training_generator):
                 X_batch, y_batch = X_batch.to(device), y_batch.to(device)
                 X_batch, y_batch = X_batch.permute(1, 0, 2), y_batch.permute(1, 0, 2)
-                train_loss = train_lstm(X_batch, y_batch, encoder,
-                                   decoder, encoder_opt, decoder_opt, criterion)
+                train_loss = train(X_batch, y_batch, model, opt, criterion, config["clip"])
                 experiment.log_metric("train_loss", train_loss, step=iterations)
                 # checkpoint model periodically
                 if iterations % config["every"]["save"] == 0:
                     snapshot_prefix = os.path.join(config["result_directory"], 'snapshot')
                     snapshot_path = snapshot_prefix + '_loss_{:.6f}_iter_{}_model.pt'.format(train_loss, iterations)
                     torch.save({
-                        'encoder': encoder.state_dict(),
-                        'decoder': decoder.state_dict(),
-                        'encoder_opt': encoder_opt.state_dict(),
-                        'decoder_opt': decoder_opt.state_dict(),
+                        'model': model.state_dict(),
+                        'opt': opt.state_dict(),
                     }, snapshot_path)
                     
                     for f in glob.glob(snapshot_prefix + '*'):
@@ -99,7 +90,7 @@ if __name__ == '__main__':
                         for X_batch_v, y_batch_v in validation_generator:
                             X_batch_v, y_batch_v = X_batch_v.to(device), y_batch_v.to(device)
                             X_batch_v, y_batch_v = X_batch_v.permute(1, 0, 2), y_batch_v.permute(1, 0, 2)
-                            valid_loss += validate_lstm(X_batch_v, y_batch_v, encoder, decoder, criterion)
+                            valid_loss += validate(X_batch_v, y_batch_v, model, criterion)
 
                         experiment.log_metric("valid_loss", valid_loss, step=iterations)
                         print(dev_log_template.format(time.time()-start,
@@ -116,10 +107,8 @@ if __name__ == '__main__':
                             
                             # save model, delete previous 'best_snapshot' files
                             torch.save({
-                                'encoder': encoder.state_dict(),
-                                'decoder': decoder.state_dict(),
-                                'encoder_opt': encoder_opt.state_dict(),
-                                'decoder_opt': decoder_opt.state_dict(),
+                                'model': model.state_dict(),
+                                'opt': opt.state_dict(),
                             }, snapshot_path)
             
                             for f in glob.glob(snapshot_prefix + '*'):
@@ -138,5 +127,5 @@ if __name__ == '__main__':
         for X_batch_t, y_batch_t in test_generator:
             X_batch_t, y_batch_t = X_batch_t.to(device), y_batch_t.to(device)
             X_batch_t, y_batch_t = X_batch_t.permute(1, 0, 2), y_batch_t.permute(1, 0, 2)
-            test_loss += validate_lstm(X_batch_t, y_batch_t, encoder, decoder, criterion)
+            test_loss += validate(X_batch_t, y_batch_t, model, criterion)
         experiment.log_metric("test loss", test_loss)

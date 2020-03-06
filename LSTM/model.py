@@ -35,17 +35,17 @@ class DecoderLSTM(nn.Module):
         return prediction, hidden, cell
 
 
-class Seq2SeqLSTM(nn.Module):
-    def __init__(self, encoder, decoder, device):
+class Model(nn.Module):
+    def __init__(self, config, device):
         super().__init__()
         
-        self.encoder = encoder
-        self.decoder = decoder
+        self.encoder = EncoderLSTM(config["encoder"]).to(device)
+        self.decoder = DecoderLSTM(config["decoder"]).to(device)
         self.device = device
         
-        assert encoder.hid_dim == decoder.hid_dim, \
+        assert self.encoder.hid_dim == self.decoder.hid_dim, \
             "Hidden dimensions of encoder and decoder must be equal!"
-        assert encoder.n_layers == decoder.n_layers, \
+        assert self.encoder.n_layers == self.decoder.n_layers, \
             "Encoder and decoder must have equal number of layers!"
     
     def forward(self, input_tensor, target_tensor, teacher_forcing_ratio=0.5):
@@ -59,39 +59,15 @@ class Seq2SeqLSTM(nn.Module):
         # last hidden state of the encoder is used as the initial hidden state of the decoder
         encoder_hidden, encoder_cell = self.encoder(input_tensor)
 
-        # first input to the decoder is the <sos> tokens
-        decoder_input = target_tensor[0].unsqueeze(0)
         decoder_cell = encoder_cell
         decoder_hidden = encoder_hidden
-        
-        for t in range(1, trg_len):
-            # insert input token embedding, previous hidden and previous cell states
-            # receive output tensor (predictions) and new hidden and cell states
-            decoder_output, decoder_hidden, decoder_cell = self.decoder(decoder_input, decoder_hidden, decoder_cell)
+        decoder_output = torch.zeros(1, batch_size, 1)
 
-            # place predictions in a tensor holding predictions for each token
-            outputs[t] = decoder_output
-
-            # decide if we are going to use teacher forcing or not
+        for t in range(trg_len):
             teacher_force = random.random() < teacher_forcing_ratio
-
-            # if teacher forcing, use actual next token as next input
-            # if not, use predicted token
             decoder_input = target_tensor[t].unsqueeze(0) if teacher_force else decoder_output
+            decoder_output, decoder_hidden, decoder_cell = self.decoder(decoder_input, decoder_hidden, decoder_cell)
+            outputs[t] = decoder_output
         
         return outputs
 
-
-def train(model, input, target, optimizer, criterion, clip):
-    
-    model.train()
-    
-    optimizer.zero_grad()
-    output = model(input, target)
-    loss = criterion(output, target)
-    
-    loss.backward()
-    torch.nn.utils.clip_grad_norm_(model.parameters(), clip)
-    optimizer.step()
-        
-    return loss.item()
