@@ -1,6 +1,5 @@
 #!/bin/bash
 #SBATCH --job-name=DeepGenomicsGRU
-#SBATCH --partition=gpu-1
 #SBATCH --gpus=1
 #SBATCH -с 4
 python main.py

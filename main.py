@@ -5,6 +5,7 @@ import random
 import importlib
 
 from comet_ml import Experiment
+from comet_ml import OfflineExperiment
 
 import torch
 import torch.optim as O
@@ -17,11 +18,21 @@ from dataset import Dataset
 
 
 if __name__ == '__main__':
+    SEED = 1234
+
+    random.seed(SEED)
+    torch.manual_seed(SEED)
+    torch.cuda.manual_seed(SEED)
+    torch.backends.cudnn.deterministic = True
+
     config = get_config()
-    experiment = Experiment("wXwnV8LZOtVfxqnRxr65Lv7C2")
+    # experiment = Experiment("wXwnV8LZOtVfxqnRxr65Lv7C2")
+    experiment = OfflineExperiment(
+        project_name="DeepGenomics",
+        offline_directory="/home/karzymatov/Projects/DeepGenomics/comet/AttnGRU")
     experiment.log_parameters(config)
     if torch.cuda.is_available():
-        torch.cuda.set_device(config["gpu"])
+        # torch.cuda.set_device(str(os.environ["CUDA_VISIBLE_DEVICES"]))
         device = torch.device('cuda:{}'.format(os.environ["CUDA_VISIBLE_DEVICES"]))
     else:
         device = torch.device('cpu')
@@ -49,7 +60,7 @@ if __name__ == '__main__':
     if config["resume_snapshot"]:
         model = torch.load(config["resume_snapshot"], map_location=device)
     else:
-        model = importlib.import_module(config["model"]).Model(config, device)
+        model = importlib.import_module(config["model"]).Model(config, device).to(device)
     
     criterion = nn.MSELoss()
     opt = O.Adam(model.parameters(), lr=config["optimizer"]["learning_rate"])

@@ -13,8 +13,8 @@ class EncoderGRU(nn.Module):
         self.num_layers = config["num_layers"]
         self.gru = nn.GRU(self.input_size, self.hidden_size, self.num_layers)
     
-    def forward(self, input, hidden):
-        output, hidden = self.gru(input, hidden)
+    def forward(self, input):
+        output, hidden = self.gru(input)
         return output, hidden
 
 
@@ -37,6 +37,10 @@ class AttnDecoderGRU(nn.Module):
     def forward(self, input, hidden, encoder_outputs):
         
         repeat_vals = [input.shape[0] // hidden.shape[0]] + [-1] * (len(hidden.shape) - 1)
+        print("repeat_vals", repeat_vals)
+        print("input", input.size())
+        print("hidden", hidden.size())
+        
         concatenated = torch.cat((input, hidden.expand(*repeat_vals)), dim=-1)
         attn = self.attn(concatenated)
         attn_weights = F.softmax(attn, dim=-1)
@@ -66,13 +70,13 @@ class Model(nn.Module):
     def __init__(self, config, device):
         super().__init__()
         
-        self.encoder = EncoderGRU(config["encoder"]).to(device)
-        self.decoder = AttnDecoderGRU(config["decoder"]).to(device)
+        self.encoder = EncoderGRU(config["encoder"])
+        self.decoder = AttnDecoderGRU(config["decoder"])
         self.device = device
-        
-        assert self.encoder.hid_dim == self.decoder.hid_dim, \
+
+        assert self.encoder.hidden_size == self.decoder.hidden_size, \
             "Hidden dimensions of encoder and decoder must be equal!"
-        assert self.encoder.n_layers == self.decoder.n_layers, \
+        assert self.encoder.num_layers == self.decoder.num_layers, \
             "Encoder and decoder must have equal number of layers!"
 
     def forward(self, input_tensor, target_tensor, teacher_forcing_ratio=0.5):
@@ -84,7 +88,7 @@ class Model(nn.Module):
     
         encoder_outputs, encoder_hidden = self.encoder(input_tensor)
     
-        decoder_output = torch.zeros(1, batch_size, 1)
+        decoder_output = torch.zeros(1, batch_size, 1).to(self.device)
         decoder_hidden = encoder_hidden
     
         for t in range(trg_len):

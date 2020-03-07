@@ -2,10 +2,10 @@
   "data": "/home/karzymatov/genomic_data/s_data/",
   "result_directory": "gru_result",
   "resume_snapshot": "",
-  "model": "GRU.model",
+  "model": "AttnGRU.model",
   "training": {
     "epochs": 1000,
-    "batch_size": 32,
+    "batch_size": 16,
     "shuffle": true,
     "num_workers": 16
   },

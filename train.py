@@ -1,9 +1,7 @@
-import random
 import torch
 
 
 def train(input, target, model, optimizer, criterion, clip):
-    
     model.train()
     
     optimizer.zero_grad()

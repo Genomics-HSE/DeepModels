@@ -39,13 +39,13 @@ class Model(nn.Module):
     def __init__(self, config, device):
         super().__init__()
         
-        self.encoder = EncoderLSTM(config["encoder"]).to(device)
-        self.decoder = DecoderLSTM(config["decoder"]).to(device)
+        self.encoder = EncoderLSTM(config["encoder"])
+        self.decoder = DecoderLSTM(config["decoder"])
         self.device = device
-        
-        assert self.encoder.hid_dim == self.decoder.hid_dim, \
+
+        assert self.encoder.hidden_size == self.decoder.hidden_size, \
             "Hidden dimensions of encoder and decoder must be equal!"
-        assert self.encoder.n_layers == self.decoder.n_layers, \
+        assert self.encoder.num_layers == self.decoder.num_layers, \
             "Encoder and decoder must have equal number of layers!"
     
     def forward(self, input_tensor, target_tensor, teacher_forcing_ratio=0.5):
@@ -61,7 +61,7 @@ class Model(nn.Module):
 
         decoder_cell = encoder_cell
         decoder_hidden = encoder_hidden
-        decoder_output = torch.zeros(1, batch_size, 1)
+        decoder_output = torch.zeros(1, batch_size, 1).to(self.device)
 
         for t in range(trg_len):
             teacher_force = random.random() < teacher_forcing_ratio

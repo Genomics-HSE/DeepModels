@@ -2,7 +2,6 @@ import random
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 
 
 class EncoderGRU(nn.Module):
@@ -46,8 +45,8 @@ class Model(nn.Module):
     def __init__(self, config, device):
         super().__init__()
 
-        self.encoder = EncoderGRU(config["encoder"]).to(device)
-        self.decoder = DecoderGRU(config["decoder"]).to(device)
+        self.encoder = EncoderGRU(config["encoder"])
+        self.decoder = DecoderGRU(config["decoder"])
         self.device = device
         
         assert self.encoder.hidden_size == self.decoder.hidden_size, \
@@ -68,7 +67,7 @@ class Model(nn.Module):
         encoder_hidden = self.encoder(input_tensor)
     
         # decoder_input = target_tensor[0].unsqueeze(0)
-        decoder_output = torch.zeros(1, batch_size, 1)
+        decoder_output = torch.zeros(1, batch_size, 1).to(self.device)
         decoder_hidden = encoder_hidden
     
         for t in range(trg_len):
