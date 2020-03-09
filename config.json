@@ -1,40 +1,40 @@
 {
   "data": "/home/karzymatov/genomic_data/s_data/",
-  "result_directory": "gru_result",
+  "result_directory": "/home/karzymatov/Projects/DeepGenomics/result/",
   "resume_snapshot": "",
-  "model": "AttnGRU.model",
+  "model": "BiAttnGRU.model",
   "training": {
-    "epochs": 1000,
+    "epochs": 100,
     "batch_size": 16,
     "shuffle": true,
     "num_workers": 16
   },
   "encoder": {
     "input_size" : 1,
-    "hidden_size": 2048,
+    "hidden_size": 256,
     "bidirectional": false,
-    "num_layers": 4,
+    "num_layers": 1,
     "dropout": 0.1
   },
   "optimizer": {
     "learning_rate": 0.001
   },
-  "clip": 1,
+  "clip": 0.5,
   "decoder": {
     "input_size" : 1,
-    "hidden_size": 2048,
+    "hidden_size": 256,
     "output_size" : 1,
     "length": 3000,
     "dropout": 0.1,
     "bidirectional": false,
-    "num_layers": 4,
+    "num_layers": 1,
     "teacher_forcing_ratio": 0.5
   },
   "every": {
     "save": 200,
     "plot": 100,
     "validate": 500,
-    "log": 500
+    "log": 200
   },
   "gpu": 3
 }

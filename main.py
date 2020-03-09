@@ -4,8 +4,7 @@ import glob
 import random
 import importlib
 
-from comet_ml import Experiment
-from comet_ml import OfflineExperiment
+from comet_ml import Experiment, OfflineExperiment
 
 import torch
 import torch.optim as O
@@ -27,9 +26,11 @@ if __name__ == '__main__':
 
     config = get_config()
     # experiment = Experiment("wXwnV8LZOtVfxqnRxr65Lv7C2")
+    comet_dir_path = os.path.join(config["result_directory"], config["model"])
+    makedirs(comet_dir_path)
     experiment = OfflineExperiment(
         project_name="DeepGenomics",
-        offline_directory="/home/karzymatov/Projects/DeepGenomics/comet/AttnGRU")
+        offline_directory=comet_dir_path)
     experiment.log_parameters(config)
     if torch.cuda.is_available():
         # torch.cuda.set_device(str(os.environ["CUDA_VISIBLE_DEVICES"]))
@@ -71,7 +72,6 @@ if __name__ == '__main__':
     header = '  Time Epoch Iteration Progress    (%Epoch)   Loss'
     dev_log_template = ' '.join('{:>6.0f},{:>5.0f},{:>9.0f},{:>5.0f}/{:<5.0f} {:>7.0f}%,{:>8.6f},{:8.6f}'.split(','))
     log_template =     ' '.join('{:>6.0f},{:>5.0f},{:>9.0f},{:>5.0f}/{:<5.0f} {:>7.0f}%,{:>8.6f}'.split(','))
-    makedirs(config["result_directory"])
     print(header)
     
     with experiment.train():

@@ -1,6 +1,7 @@
 import os
 import json
 import glob
+import errno
 
 import torch
 
@@ -29,9 +30,7 @@ def get_filenames(path):
 def makedirs(name):
     """helper function for python 2 and 3 to call os.makedirs()
        avoiding an error if the directory to be created already exists"""
-    
-    import os, errno
-    
+       
     try:
         os.makedirs(name)
     except OSError as ex:
