@@ -6,6 +6,7 @@ def train(input, target, model, optimizer, criterion, clip):
     
     optimizer.zero_grad()
     output = model(input, target)
+
     loss = criterion(output, target)
     
     loss.backward()

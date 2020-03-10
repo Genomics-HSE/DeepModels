@@ -1,4 +1,5 @@
 import os
+import sys
 import time
 import glob
 import random
@@ -24,7 +25,7 @@ if __name__ == '__main__':
     torch.cuda.manual_seed(SEED)
     torch.backends.cudnn.deterministic = True
 
-    config = get_config()
+    config = get_config(sys.argv[1])
     # experiment = Experiment("wXwnV8LZOtVfxqnRxr65Lv7C2")
     comet_dir_path = os.path.join(config["result_directory"], config["model"])
     makedirs(comet_dir_path)

@@ -17,8 +17,9 @@ def save_and_delete_snapshot(encoder, decoder, encoder_opt, decoder_opt, snapsho
         if f != snapshot_path:
             os.remove(f)
 
-def get_config():
-    with open('config.json', 'r') as f:
+
+def get_config(path):
+    with open(path, 'r') as f:
         config = json.load(f)
     return config
 
