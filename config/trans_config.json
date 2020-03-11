@@ -1,0 +1,41 @@
+{
+  "data": "/home/karzymatov/genomic_data/s_data/",
+  "result_directory": "/home/karzymatov/Projects/DeepGenomics/result/",
+  "resume_snapshot": "",
+  "model": "Transformer.model",
+  "training": {
+    "epochs": 100,
+    "batch_size": 16,
+    "shuffle": true,
+    "num_workers": 16
+  },
+  "encoder": {
+    "input_size": 1,
+    "hidden_size": 1,
+    "num_layers": 3,
+    "pf_size": 512,
+    "n_heads": 8,
+    "length": 3000,
+    "dropout": 0.1
+  },
+  "optimizer": {
+    "learning_rate": 0.0005
+  },
+  "clip": 0.5,
+  "decoder": {
+    "output_size": 1,
+    "hidden_size": 1,
+    "num_layers": 3,
+    "pf_size": 512,
+    "n_heads": 8,
+    "length": 3000,
+    "dropout": 0.1
+  },
+  "every": {
+    "save": 200,
+    "plot": 100,
+    "validate": 500,
+    "log": 200
+  },
+  "gpu": 3
+}
